@@ -1,6 +1,6 @@
 locksstracking
 
-I was interested in how long it would take my local LOCKSS node to collect all the Archival Units that I've selected.
+I was interested in how long it would take my local LOCKSS node to collect all the Archival Units that my institution has selected.
 
 My google docs spreadsheet has a bunch of formulas in it to calculate an average time to successfully collect the 
 Archival Units that have been selected for collection.
