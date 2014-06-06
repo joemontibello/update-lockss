@@ -2,8 +2,6 @@
 
 #lockssupdatestats.py
 
-#import needed modules. re, time and sys are part of python, so you
-#get them with an install of the language.
 # gdata.spreadsheet.service uses an API to read and edit google documents.
 #requests makes http requesting easier.
 
@@ -15,19 +13,17 @@ import gdata.spreadsheet.service
 import requests
 
 
+
 #doc_name is used to find the right spreadsheet inside the user's google drive acct
 #credfile is the full path to the file that holds usernames and passwords
-#To work, you need a plain text file. It should have 4 values, each on its own
-#line, with no blank lines.  They need to be ordered like this:
+# credgapi is a text file with these four values on separate lines:
 #  email (user's gmail address)
 #  password (gmail password)
 #  lockssname
 #  locksspassword
-#I've included credgapi as a placeholder file in git, but the name of the file
-#doesn't matter as long as the variable points to it correctly.
 
-credfile = '../credgapi'
 doc_name = 'lockss crawl stats'
+credfile = '../credgapi'
 
 try:
     creds = open(credfile, 'r')
@@ -37,6 +33,7 @@ except IOError:
     raise
 
 else:
+
     #If we opened the credentials properly, we can pull
     #each line into a variable, removing the "return" at the end of each.
     email = creds.readline().rstrip()
@@ -50,45 +47,37 @@ else:
 if email == "" or password == "" or lockssname == "" or locksspassword == "":
     print "Failed to read one or more of the needed credentials from " + credfile + "\n"
 
-#now is a variable that gets the time on the computer where the script is running.
-#The LOCKSS calculations in the spreadsheet will be messed up if
-#this script runs in a different time zone from the original, and
-#standard time vs. daylight savings time should be handled here but it isn't.
+# Get current time. The LOCKSS calculations in the spreadsheet will be messed up if this script runs in a different
+# time zone from the original, and standard time vs. daylight savings time should be handled here but it isn't.
 #It's not going to throw the numbers off enough to make me want to fix it.
 
 thistime = time.time()
 now = time.localtime(thistime)
 
-#top_level_url is the lockss server page where the latest numbers come from
-#total, notcollected and needrecrawl are the numbers we need.
-
-top_level_url = "http://lockss2.dartmouth.edu:8081/DaemonStatus"
+daemonpage = "http://lockss2.dartmouth.edu:8081/DaemonStatus"  # lockss server page
 total = ""
 notcollected = ""
 needrecrawl = " "
 
-r = requests.get(top_level_url, auth=(lockssname, locksspassword))
-#print r.text #debugging
-#requestworked = re.match(".*Archival.*", r.text) #debugging
+r = requests.get(daemonpage, auth=(lockssname, locksspassword))
 requestworked = '<title>LOCKSS: Overview - Daemon Status</title>' in r.text
 if not requestworked:
     print "request failed. got: \n " + r.text
     exit()
 
 else:
-    #We have the page, and now we use a regular expression to find
-    #the numbers on that page to plug into our spreadsheet.
+    #Use a regex to extract the numbers we need for our spreadsheet.
     pattern = re.compile(
         '.*ArchivalUnitStatusTable\">(.*)Archival\sUnits\s\([\d]+\sinternal\),\s(.*)\snot\scollected,\s(.*)\sneed.*',
         re.MULTILINE | re.DOTALL)
     result = pattern.match(r.text)
-    #print "result = " + result #debugging
+
     if result:
         total = result.group(1)
         notcollected = result.group(2)
         needrecrawl = result.group(3)
     else:
-        print "Failed - " + top_level_url + " - " + r.text + "\n"
+        print "Failed - " + daemonpage + " - " + r.text + "\n"
         exit()
 
 #get logged in to Google Docs SpreadsheetsService
@@ -98,7 +87,7 @@ spr_client.password = password
 spr_client.source = 'lockss update'
 login = spr_client.ProgrammaticLogin()
 
-#get the document specified in doc_name programmatically
+# get the document specified in doc_name
 q = gdata.spreadsheet.service.DocumentQuery()
 q['title'] = doc_name
 q['title-exact'] = 'true'
@@ -108,8 +97,6 @@ wfeed = spr_client.GetWorksheetsFeed(spreadsheet_id)
 worksheet_id = wfeed.entry[0].id.text.rsplit('/', 1)[1]
 
 # Prepare a dictionary of all the data we're going to write into the spreadsheet.
-# I had a lot of trouble with column headers until I changed them all
-# to lower-case letters only. 
 lockssdict = {'date': str(now.tm_mon) + '/' + str(now.tm_mday) + '/' + str(now.tm_year),
               'time': str(now.tm_hour) + ':' + str(now.tm_min), 'totalaus': total, 'notcollected': notcollected,
               'needingrecrawl': needrecrawl}

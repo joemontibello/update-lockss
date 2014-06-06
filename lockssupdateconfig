@@ -1,0 +1,15 @@
+[authorization]
+email: youremail
+
+
+@gmail.com
+
+
+password: gmailpassword
+lockssname: lockssusername
+locksspassword: locksspwd
+
+[local setup]
+doc_name: 'lockss crawl stats'
+credfile: './credgapi'
+daemonpage: "http://lockss2.dartmouth.edu:8081/DaemonStatus"
