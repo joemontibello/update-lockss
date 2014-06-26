@@ -1,4 +1,4 @@
-locksstracking
+#locksstracking
 
 I was interested in how long it would take my local LOCKSS node to collect all the Archival Units that my institution
 has selected.
@@ -9,12 +9,13 @@ Archival Units that have been selected for collection.
 This python script looks up the appropriate numbers on the lockss node's website, parses them, and dumps
 them into the spreadsheet. I've been running the script daily via a cron job on my local machine.
 
-Requirements:
+###Requirements:
+
 I'm using Python 2.7 on a mac (and haven't tested this in any other environment). The script requires the 'requests'
 python module and a few other pieces, listed in the early part of the script. The usernames and passwords required are
 in a separate text file, credgapi.
 
-TO-DO:
+###TO-DO:
 
 Find a way to update the formula cells in the spreadsheet. Right now I let the script put the numbers in, and then
 I manually open the document once in a while and use command-D to fill the formulas down from the last filled in line.

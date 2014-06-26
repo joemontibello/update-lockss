@@ -7,7 +7,7 @@
 import re
 import time
 from sys import exit
-
+# import configparser
 import gdata.spreadsheet.service
 import requests
 
@@ -20,7 +20,7 @@ def main():
     #  password (gmail password)
     #  lockssname
     #  locksspassword
-
+    lockssdict = {}
     doc_name = 'lockss crawl stats'
     credfile = '../credgapi'
     try:
@@ -65,14 +65,14 @@ def main():
     else:
         # Use a regex to extract the numbers we need for our spreadsheet.
         pattern = re.compile(
-            '.*ArchivalUnitStatusTable\">(.*)Archival\sUnits\s\([\d]+\sinternal\),'
-            '\s(.*)\snot\scollected,\s(.*)\sneed.*', re.MULTILINE | re.DOTALL)
+            '.*ArchivalUnitStatusTable\">(.*)Archival\sUnits\s\([\d]+\sinternal\),' '\s(.*)\snot\scollected,\s(.*)\sneed.*',
+            re.MULTILINE | re.DOTALL)
         result = pattern.match(r.text)
 
         if result:
-            total = result.group(1)
-            notcollected = result.group(2)
-            needrecrawl = result.group(3)
+            lockssdict['totalaus'] = result.group(1)
+            lockssdict['notcollected'] = result.group(2)
+            lockssdict['needingrecrawl'] = result.group(3)
         else:
             print "Failed - " + daemonpage + " - " + r.text + "\n"
             exit()
@@ -100,9 +100,8 @@ def main():
         worksheet_id = wfeed.entry[0].id.text.rsplit('/', 1)[1]
 
         # Prepare a dictionary of all the data we're going to write into the spreadsheet.
-        lockssdict = {'date': str(now.tm_mon) + '/' + str(now.tm_mday) + '/' + str(now.tm_year),
-                      'time': str(now.tm_hour) + ':' + str(now.tm_min), 'totalaus': total, 'notcollected': notcollected,
-                      'needingrecrawl': needrecrawl}
+        lockssdict['date'] = str(now.tm_mon) + '/' + str(now.tm_mday) + '/' + str(now.tm_year)
+        lockssdict['time'] = str(now.tm_hour) + ':' + str(now.tm_min)
 
         # write the data into the next available row in the spreadsheet.
         entry = spr_client.InsertRow(lockssdict, spreadsheet_id, worksheet_id)
