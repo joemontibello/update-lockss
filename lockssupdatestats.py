@@ -10,19 +10,26 @@ from sys import exit
 # import configparser
 import gdata.spreadsheet.service
 import requests
+import os
 
 
 def main():
     # doc_name is used to find the right spreadsheet inside the user's google drive acct
     # credfile is the full path to the file that holds usernames and passwords
     # credgapi is a text file with these four values on separate lines:
-    #  email (user's gmail address)
-    #  password (gmail password)
-    #  lockssname
+    # email (user's gmail address)
+    # password (gmail password)
+    # lockssname
     #  locksspassword
     lockssdict = {}
     doc_name = 'lockss crawl stats'
-    credfile = '../credgapi'
+    if os.isatty(sys.stdin.fileno()):
+        # Debug mode.
+        credfile = "../keys/credfile"
+    else:
+    # Cron mode.
+        wd = os.getcwd()
+        credfile = "{0}/keys/credfile".format(wd)
     try:
         creds = open(credfile, 'r')
     except IOError:
@@ -52,9 +59,6 @@ def main():
     now = time.localtime(thistime)
 
     daemonpage = "http://lockss2.dartmouth.edu:8081/DaemonStatus"  # lockss server page
-    total = ""
-    notcollected = ""
-    needrecrawl = " "
 
     r = requests.get(daemonpage, auth=(lockssname, locksspassword))
     requestworked = '<title>LOCKSS: Overview - Daemon Status</title>' in r.text
@@ -65,16 +69,31 @@ def main():
     else:
         # Use a regex to extract the numbers we need for our spreadsheet.
         pattern = re.compile(
-            '.*ArchivalUnitStatusTable\">(.*)Archival\sUnits\s\([\d]+\sinternal\),' '\s(.*)\snot\scollected,\s(.*)\sneed.*',
-            re.MULTILINE | re.DOTALL)
-        result = pattern.match(r.text)
+            '.*ArchivalUnitStatusTable\">(.*)Archival\sUnits\s\([\d]+\sinternal\),\s(.*)\snot\scollected,\s(.*)'
+            '\sneed.*', re.MULTILINE | re.DOTALL)
 
-        if result:
+        # pattern2 = re.compile(
+        #     '.*table=RepositorySpace\">[0-9\.]+\sdisks:\s[0-9\.]+TB\s\([0-9]+%%\sfull,\s([0-9\.]+)GB\sfree\),'
+        #     '\s[0-9\.]+TB\s\([0-9]+%%\sfull,\s([0-9\.]+)GB\sfree\),\s[0-9\.]+TB\s\([0-9]+%%\sfull,\s([0-9\.]+)'
+        #     'GB\sfree\)', re.MULTILINE | re.DOTALL)
+        pattern2 = re.compile(
+            '.*table=RepositorySpace\">[0-9\s]+disks:\s[0-9\.]+TB\s+\([0-9]+[%]\sfull,\s([0-9\.]+)GB\sfree\),'
+            '\s[0-9\.]+TB\s\([0-9]+[%]\sfull,\s([0-9\.]+)GB\sfree\),\s[0-9\.]+TB\s\([0-9]+[%]\sfull,\s([0-9\.]+)GB'
+            '\sfree\),\s[0-9\.]+TB\s\([0-9]+[%]\sfull,\s([0-9]+)', re.MULTILINE | re.DOTALL)
+        result = pattern.match(r.text)
+        result2 = pattern2.match(r.text)
+        if result and result2:
             lockssdict['totalaus'] = result.group(1)
             lockssdict['notcollected'] = result.group(2)
             lockssdict['needingrecrawl'] = result.group(3)
+            lockssdict['space1'] = result2.group(1)
+            lockssdict['space2'] = result2.group(2)
+            lockssdict['space3'] = result2.group(3)
+            lockssdict['space4'] = result2.group(4)
         else:
             print "Failed - " + daemonpage + " - " + r.text + "\n"
+            print "result = " + str(result) + "\n"
+            print "result2 = " + str(result2) + "\n"
             exit()
 
     # get logged in to Google Docs SpreadsheetsService

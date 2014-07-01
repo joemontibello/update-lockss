@@ -1,10 +1,5 @@
 [authorization]
-email: youremail
-
-
-@gmail.com
-
-
+email: youremail@gmail.com
 password: gmailpassword
 lockssname: lockssusername
 locksspassword: locksspwd
@@ -13,3 +8,6 @@ locksspassword: locksspwd
 doc_name: 'lockss crawl stats'
 credfile: './credgapi'
 daemonpage: "http://lockss2.dartmouth.edu:8081/DaemonStatus"
+
+[oauth2 setup]
+refreshtoken: '*refreshtoken*'
